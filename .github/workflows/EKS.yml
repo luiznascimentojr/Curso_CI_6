@@ -1,11 +1,11 @@
-name: kubernetes
+name: Kubernetes
 
 on:
-  workflow_call:
+  workflow_call: # sempre que algum worflow chamar
 
 jobs:
 
-  EKS:
+  EKS: #nome do job
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -16,3 +16,15 @@ jobs:
         aws-access-key-id: ${{ secrets.ID_CHAVE_ACESSO }}
         aws-secret-access-key: ${{ secrets.CHAVE_SECRETA }}
         aws-region: us-east-2
+
+    - name: clonado repositorio de infra
+      run: git clone https://github.com/luiznascimentojr/Infra_CI_Kubernetes.git
+
+    - name: HashiCorp-Setup-Instalando Terraform
+      uses: hashicorp/setup-terraform@v2.0.3
+
+    - name: HashiCorp-Iniciando TerraForm 
+      run: terraform -chdir=Infra_CI_Kubernetes/env/Homolog init
+
+    - name: HashiCorp-Aprovando o Terraform -Ativo aprovação automatica 
+      run: terraform -chdir=Infra_CI_Kubernetes/env/Homolog apply -auto-approve 
