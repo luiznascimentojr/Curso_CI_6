@@ -28,3 +28,17 @@ jobs:
 
     - name: HashiCorp-Aprovando o Terraform -Ativo aprovação automatica 
       run: terraform -chdir=Infra_CI_Kubernetes/env/Homolog apply -auto-approve 
+
+    - name: Instalando o Kubectl # utilizado para interagir com o cluster do Kubernetes.
+      uses: Azure/setup-kubectl@v3
+
+    - name: Obterndo as configurações necessárias para obtermos a informação no nosso Cluster.
+      run: aws sts get-caller-identity
+      
+    - name: Criando o arquivo kubeconfig do Kubectl com a AWS CLI.      
+      run: aws eks update-kubeconfig --region us-west-2 --name homolog2
+
+    - name: Testando a conexão com o Cluster
+      run: kubectl get svc
+
+      
