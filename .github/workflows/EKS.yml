@@ -25,9 +25,17 @@ jobs:
 
     - name: HashiCorp-Iniciando TerraForm 
       run: terraform -chdir=Infra_CI_Kubernetes/env/Homolog init
-
+    #------ EXECUTAR AO FIM DOS TESTS 0---------------  
+    # o terraform irá destruir toda a infraestrutura e a rotina será interrompida com um erro ao chegar em - run: return 1, impedindo que ela continue a ser executada.
+    #- run: terraform -chdir=Infra_CI_Kubernetes/env/Homolog destroy -auto-approve
+    #- run: return 1
+    
     - name: HashiCorp-Aprovando o Terraform -Ativo aprovação automatica 
       run: terraform -chdir=Infra_CI_Kubernetes/env/Homolog apply -auto-approve 
+      
+    - name: Extrai a saida do TerraForm valor DB dentro do Main.tf
+    - run: echo "$(terraform -chdir=Infra_CI_Kubernetes/env/Homolog output -raw IP_db)"
+      id: URL
 
     - name: Instalando o Kubectl # utilizado para interagir com o cluster do Kubernetes.
       uses: Azure/setup-kubectl@v3
@@ -40,5 +48,32 @@ jobs:
 
     - name: Testando a conexão com o Cluster
       run: kubectl get svc
+
+    - name: Variaveis de ambiente-Criando os Segredos/Colocando os Valores
+    
+    - run: kubectl delete secret dbhost --ignore-not-found
+    - run: kubectl create secret generic dbhost --from-literal=HOST=${{ steps.URL.outputs.stdout }}
+
+    - run: kubectl delete secret dbport --ignore-not-found
+    - run: kubectl create secret generic dbport --from-literal=DBPORT=${{secrets.DBPORT}}
+
+    - run: kubectl delete secret dbuser --ignore-not-found
+    - run: kubectl create secret generic dbuser --from-literal=USER=${{secrets.DBUSER}}
+
+    - run: kubectl delete secret dbpassword --ignore-not-found
+    - run: kubectl create secret generic dbpassword --from-literal=PASSWORD=${{secrets.DBPASSWORD}}
+
+    - run: kubectl delete secret dbname --ignore-not-found
+    - run: kubectl create secret generic dbname --from-literal=DBNAME=${{secrets.DBNAME}}
+
+    - run: kubectl delete secret port --ignore-not-found
+    - run: kubectl create secret generic port --from-literal=PORT=8000
+
+    - name: Criando a aplicação
+    - run:  kubectl apply -f Infra_CI_Kubernetes/go.yaml
+
+    - name: Atualiza a versao da imagem da aplicacao
+    - run: kubectl apply -f Infra_CI_Kubernetes/go.yaml 
+    - run: kubectl set image deployment/go-api go=leonardosartorello/go_ci:${{github.run_number}}
 
       
